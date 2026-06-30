@@ -2,15 +2,15 @@ const Validator = require('../utils/validator');
 const Logger = require('../utils/logger');
 
 class ConductorController {
-  constructor(clienteService, ubicacionService, suscripcionService) {
+  constructor(clienteService, ubicacionService, broadcastService) {
     this.clienteService = clienteService;
     this.ubicacionService = ubicacionService;
-    this.suscripcionService = suscripcionService;
+    this.broadcastService = broadcastService;
   }
 
   conectar(ws, userId, datos) {
     try {
-      const conductor = this.clienteService.registrarConductor(
+      this.clienteService.registrarConductor(
         ws,
         userId,
         datos.nombre || `Conductor ${userId}`,
@@ -62,28 +62,18 @@ class ConductorController {
       const ubicacion = this.ubicacionService.guardarUbicacion(conductorId, data);
       const ubicacionJSON = ubicacion.toJSON();
       
-      const suscriptores = this.suscripcionService.obtenerSuscriptores(conductorId);
-      let enviados = 0;
+      const mensaje = {
+        type: 'location_update',
+        conductor_id: conductorId,
+        ...ubicacionJSON
+      };
 
-      suscriptores.forEach((ws, ciudadanoId) => {
-        try {
-          if (ws.readyState === 1) {
-            ws.send(JSON.stringify({
-              type: 'location_update',
-              conductor_id: conductorId,
-              ...ubicacionJSON
-            }));
-            enviados++;
-          }
-        } catch (error) {
-          Logger.error(`Error enviando a ciudadano ${ciudadanoId}`, error);
-        }
-      });
+      const resultado = this.broadcastService.enviarATodos(mensaje);
 
       Logger.conductor('Ubicación actualizada', conductorId, {
         lat: ubicacion.lat,
         lng: ubicacion.lng,
-        suscriptores: enviados
+        enviados: resultado.enviados
       });
 
       return {
@@ -91,7 +81,7 @@ class ConductorController {
         data: {
           type: 'location_ack',
           message: 'Ubicación recibida y distribuida',
-          suscriptores: enviados,
+          clientes_notificados: resultado.enviados,
           timestamp: Date.now()
         }
       };
@@ -104,51 +94,18 @@ class ConductorController {
     }
   }
 
-  obtenerInfo(conductorId) {
-    const conductor = this.clienteService.obtenerConductor(conductorId);
-    
-    if (!conductor) {
-      return {
-        success: false,
-        error: 'Conductor no encontrado'
-      };
-    }
-
-    const ubicacion = this.ubicacionService.obtenerUbicacion(conductorId);
-    const suscriptores = this.suscripcionService.obtenerSuscriptores(conductorId);
-
-    return {
-      success: true,
-      data: {
-        conductor_id: conductor.id,
-        nombre: conductor.nombre,
-        conectado_desde: conductor.conectadoEn,
-        ubicacion: ubicacion ? ubicacion.toJSON() : null,
-        suscriptores: suscriptores.size
-      }
-    };
-  }
-
   desconectar(conductorId) {
     try {
       this.clienteService.eliminarConductor(conductorId);
       this.ubicacionService.eliminarUbicacion(conductorId);
       
-      const suscriptores = this.suscripcionService.obtenerSuscriptores(conductorId);
-      
-      suscriptores.forEach((ws, ciudadanoId) => {
-        try {
-          if (ws.readyState === 1) {
-            ws.send(JSON.stringify({
-              type: 'conductor_disconnected',
-              conductor_id: conductorId,
-              timestamp: Date.now()
-            }));
-          }
-        } catch (error) {
-          Logger.error(`Error notificando a ciudadano ${ciudadanoId}`, error);
-        }
-      });
+      const mensaje = {
+        type: 'conductor_disconnected',
+        conductor_id: conductorId,
+        timestamp: Date.now()
+      };
+
+      this.broadcastService.enviarATodos(mensaje);
 
       Logger.conductor('Desconectado', conductorId);
     } catch (error) {

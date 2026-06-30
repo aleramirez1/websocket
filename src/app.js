@@ -4,7 +4,7 @@ const config = require('./config/config');
 const Logger = require('./utils/logger');
 const ClienteService = require('./services/ClienteService');
 const UbicacionService = require('./services/UbicacionService');
-const SuscripcionService = require('./services/SuscripcionService');
+const BroadcastService = require('./services/BroadcastService');
 const ConductorController = require('./controllers/ConductorController');
 const CiudadanoController = require('./controllers/CiudadanoController');
 const WebSocketRouter = require('./routes/WebSocketRouter');
@@ -22,7 +22,7 @@ class App {
   inicializarServicios() {
     this.clienteService = new ClienteService();
     this.ubicacionService = new UbicacionService();
-    this.suscripcionService = new SuscripcionService();
+    this.broadcastService = new BroadcastService(this.clienteService);
     
     Logger.success('Servicios inicializados');
   }
@@ -36,13 +36,11 @@ class App {
     this.conductorController = new ConductorController(
       this.clienteService,
       this.ubicacionService,
-      this.suscripcionService
+      this.broadcastService
     );
     
     this.ciudadanoController = new CiudadanoController(
-      this.clienteService,
-      this.ubicacionService,
-      this.suscripcionService
+      this.clienteService
     );
     
     Logger.success('Controladores inicializados');
@@ -51,8 +49,7 @@ class App {
   inicializarRouter() {
     this.router = new WebSocketRouter(
       this.conductorController,
-      this.ciudadanoController,
-      this.authMiddleware
+      this.ciudadanoController
     );
     
     Logger.success('Router inicializado');
@@ -80,7 +77,7 @@ class App {
       this.iniciarLimpieza();
       this.manejarCierre();
       
-      Logger.success('Sistema listo ✨\n');
+      Logger.success('Sistema listo\n');
     } catch (error) {
       Logger.error('Error fatal al iniciar servidor', error);
       process.exit(1);
@@ -91,8 +88,8 @@ class App {
     const params = url.parse(info.req.url, true).query;
     const token = params.token || info.req.headers['sec-websocket-protocol'];
 
-    Logger.info(`🔍 Verificando cliente - URL: ${info.req.url}`);
-    Logger.info(`🔍 Token encontrado: ${token ? 'Sí (' + token.substring(0, 20) + '...)' : 'No'}`);
+    Logger.info(`Verificando cliente - URL: ${info.req.url}`);
+    Logger.info(`Token encontrado: ${token ? 'Si (' + token.substring(0, 20) + '...)' : 'No'}`);
 
     if (!token) {
       Logger.warning('Conexión rechazada: sin token JWT');
@@ -116,7 +113,7 @@ class App {
       datos: auth.datos
     };
 
-    Logger.success(`✅ Token válido para user_id: ${auth.datos.user_id}, role_id: ${auth.datos.role_id}`);
+    Logger.success(`Token valido para user_id: ${auth.datos.user_id}, role_id: ${auth.datos.role_id}`);
     callback(true);
   }
 
@@ -204,12 +201,10 @@ class App {
     setInterval(() => {
       const stats = this.clienteService.obtenerEstadisticas();
       const ubicaciones = this.ubicacionService.obtenerCantidad();
-      const suscripciones = this.suscripcionService.obtenerEstadisticas();
       
       Logger.estadisticas({
         ...stats,
-        ubicaciones,
-        ...suscripciones
+        ubicaciones
       });
     }, this.config.estadisticas.intervalo);
   }

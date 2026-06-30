@@ -2,10 +2,9 @@ const Logger = require('../utils/logger');
 const ErrorHandler = require('../middleware/ErrorHandler');
 
 class WebSocketRouter {
-  constructor(conductorController, ciudadanoController, authMiddleware) {
+  constructor(conductorController, ciudadanoController) {
     this.conductorController = conductorController;
     this.ciudadanoController = ciudadanoController;
-    this.authMiddleware = authMiddleware;
   }
 
   manejarMensaje(ws, message, clienteMeta) {
@@ -28,22 +27,6 @@ class WebSocketRouter {
       switch (data.type) {
         case 'location_update':
           this.actualizarUbicacion(ws, data, clienteMeta);
-          break;
-        
-        case 'subscribe':
-          this.suscribir(ws, data, clienteMeta);
-          break;
-        
-        case 'unsubscribe':
-          this.desuscribir(ws, data, clienteMeta);
-          break;
-        
-        case 'get_subscriptions':
-          this.obtenerSuscripciones(ws, clienteMeta);
-          break;
-        
-        case 'get_info':
-          this.obtenerInfo(ws, clienteMeta);
           break;
         
         case 'ping':
@@ -89,100 +72,6 @@ class WebSocketRouter {
       if (resultado.details) {
         errorResponse.details = resultado.details;
       }
-      ws.send(JSON.stringify(errorResponse));
-    }
-  }
-
-  suscribir(ws, data, clienteMeta) {
-    if (clienteMeta.tipo !== 'ciudadano') {
-      const errorResponse = ErrorHandler.crearRespuestaError(
-        'Solo ciudadanos pueden suscribirse',
-        'UNAUTHORIZED'
-      );
-      ws.send(JSON.stringify(errorResponse));
-      return;
-    }
-
-    const resultado = this.ciudadanoController.suscribir(
-      ws,
-      clienteMeta.userId,
-      data.conductor_id
-    );
-    
-    if (resultado.success) {
-      ws.send(JSON.stringify(resultado.data));
-    } else {
-      const errorResponse = ErrorHandler.crearRespuestaError(
-        resultado.error,
-        'SUSCRIPCION'
-      );
-      ws.send(JSON.stringify(errorResponse));
-    }
-  }
-
-  desuscribir(ws, data, clienteMeta) {
-    if (clienteMeta.tipo !== 'ciudadano') {
-      const errorResponse = ErrorHandler.crearRespuestaError(
-        'Solo ciudadanos pueden desuscribirse',
-        'UNAUTHORIZED'
-      );
-      ws.send(JSON.stringify(errorResponse));
-      return;
-    }
-
-    const resultado = this.ciudadanoController.desuscribir(
-      clienteMeta.userId,
-      data.conductor_id
-    );
-    
-    if (resultado.success) {
-      ws.send(JSON.stringify(resultado.data));
-    } else {
-      const errorResponse = ErrorHandler.crearRespuestaError(
-        resultado.error,
-        'DESUSCRIPCION'
-      );
-      ws.send(JSON.stringify(errorResponse));
-    }
-  }
-
-  obtenerSuscripciones(ws, clienteMeta) {
-    if (clienteMeta.tipo !== 'ciudadano') {
-      const errorResponse = ErrorHandler.crearRespuestaError(
-        'Solo ciudadanos pueden ver suscripciones',
-        'UNAUTHORIZED'
-      );
-      ws.send(JSON.stringify(errorResponse));
-      return;
-    }
-
-    const resultado = this.ciudadanoController.obtenerSuscripciones(clienteMeta.userId);
-    ws.send(JSON.stringify(resultado.data));
-  }
-
-  obtenerInfo(ws, clienteMeta) {
-    if (clienteMeta.tipo !== 'conductor') {
-      const errorResponse = ErrorHandler.crearRespuestaError(
-        'Solo conductores pueden solicitar su información',
-        'UNAUTHORIZED'
-      );
-      ws.send(JSON.stringify(errorResponse));
-      return;
-    }
-
-    const resultado = this.conductorController.obtenerInfo(clienteMeta.userId);
-    
-    if (resultado.success) {
-      ws.send(JSON.stringify({
-        type: 'info_response',
-        data: resultado.data,
-        timestamp: Date.now()
-      }));
-    } else {
-      const errorResponse = ErrorHandler.crearRespuestaError(
-        resultado.error,
-        'INFO_REQUEST'
-      );
       ws.send(JSON.stringify(errorResponse));
     }
   }
