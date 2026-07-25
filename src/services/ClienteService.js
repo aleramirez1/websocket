@@ -10,7 +10,7 @@ class ClienteService {
 
   registrarConductor(ws, conductorId, nombre, rutaId) {
     if (this.conductores.has(conductorId)) {
-      Logger.warning(`Conductor ${conductorId} ya existe, reemplazando conexión`);
+      Logger.warning(`Conductor ${conductorId} ya existe, reemplazando conexion`);
       const antiguo = this.conductores.get(conductorId);
       this.cerrarConexion(antiguo.ws);
     }
@@ -85,7 +85,7 @@ class ClienteService {
         ws.close();
       }
     } catch (error) {
-      Logger.error('Error cerrando conexión', error);
+      Logger.error('Error cerrando conexion', error);
     }
   }
 

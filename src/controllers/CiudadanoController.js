@@ -22,7 +22,7 @@ class CiudadanoController {
           type: 'connected',
           role: 'ciudadano',
           user_id: userId,
-          message: 'Ciudadano conectado. Recibirás actualizaciones de todos los conductores',
+          message: 'Ciudadano conectado. Recibiras actualizaciones de todos los conductores',
           timestamp: Date.now()
         }
       };

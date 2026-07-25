@@ -1,8 +1,8 @@
 const Logger = require('../utils/logger');
 
 class ErrorHandler {
-  static manejarError(ws, error, contexto = 'Operación') {
-    Logger.error(`${contexto} falló`, error);
+  static manejarError(ws, error, contexto = 'Operacion') {
+    Logger.error(`${contexto} fallo`, error);
 
     const respuesta = {
       type: 'error',
@@ -31,7 +31,7 @@ class ErrorHandler {
         ws.send(JSON.stringify(respuesta));
       }
     } catch (error) {
-      Logger.error('Error enviando errores de validación', error);
+      Logger.error('Error enviando errores de validacion', error);
     }
   }
 

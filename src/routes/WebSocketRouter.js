@@ -15,12 +15,12 @@ class WebSocketRouter {
       data = JSON.parse(message);
     } catch (error) {
       Logger.error('Error parseando JSON', error);
-      ErrorHandler.manejarError(ws, new Error('JSON inválido'), 'Parseo');
+      ErrorHandler.manejarError(ws, new Error('JSON invalido'), 'Parseo');
       return;
     }
 
     if (!data.type) {
-      ErrorHandler.manejarError(ws, new Error('Tipo de mensaje no especificado'), 'Validación');
+      ErrorHandler.manejarError(ws, new Error('Tipo de mensaje no especificado'), 'Validacion');
       return;
     }
 

@@ -3,18 +3,18 @@ const WebSocket = require('ws');
 const ws = new WebSocket('ws://localhost:8080');
 
 ws.on('open', () => {
-  console.log('✅ CONECTADO al servidor\n');
+  console.log('CONECTADO al servidor\n');
   
-  console.log('📤 Registrando como conductor...');
+  console.log('Registrando como conductor...');
   ws.send(JSON.stringify({
     type: 'register_conductor',
     conductor_id: 123,
-    nombre: 'Juan Pérez',
+    nombre: 'Juan Perez',
     ruta_id: 1
   }));
   
   setTimeout(() => {
-    console.log('\n📤 Enviando ubicación...');
+    console.log('\nEnviando ubicacion...');
     ws.send(JSON.stringify({
       type: 'location_update',
       lat: 16.6234,
@@ -27,7 +27,7 @@ ws.on('open', () => {
   }, 1000);
   
   setTimeout(() => {
-    console.log('\n📤 Enviando segunda ubicación...');
+    console.log('\nEnviando segunda ubicacion...');
     ws.send(JSON.stringify({
       type: 'location_update',
       lat: 16.6245,
@@ -40,21 +40,21 @@ ws.on('open', () => {
   }, 2000);
   
   setTimeout(() => {
-    console.log('\n🔌 Cerrando conexión...');
+    console.log('\nCerrando conexion...');
     ws.close();
   }, 3000);
 });
 
 ws.on('message', (data) => {
   const msg = JSON.parse(data);
-  console.log('📩 RECIBIDO:', JSON.stringify(msg, null, 2));
+  console.log('RECIBIDO:', JSON.stringify(msg, null, 2));
 });
 
 ws.on('error', (error) => {
-  console.error('❌ ERROR:', error.message);
+  console.error('ERROR:', error.message);
 });
 
 ws.on('close', () => {
-  console.log('\n🔌 DESCONECTADO del servidor');
+  console.log('\nDESCONECTADO del servidor');
   process.exit(0);
 });

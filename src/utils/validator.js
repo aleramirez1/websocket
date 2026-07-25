@@ -7,7 +7,7 @@ class Validator {
     }
 
     if (typeof data.conductor_id !== 'number') {
-      errores.push('conductor_id debe ser un número');
+      errores.push('conductor_id debe ser un numero');
     }
 
     if (!data.nombre || typeof data.nombre !== 'string') {
@@ -15,7 +15,7 @@ class Validator {
     }
 
     if (data.nombre && data.nombre.trim().length === 0) {
-      errores.push('nombre no puede estar vacío');
+      errores.push('nombre no puede estar vacio');
     }
 
     return {
@@ -36,11 +36,11 @@ class Validator {
     }
 
     if (typeof data.lat !== 'number' || isNaN(data.lat)) {
-      errores.push('lat debe ser un número válido');
+      errores.push('lat debe ser un numero valido');
     }
 
     if (typeof data.lng !== 'number' || isNaN(data.lng)) {
-      errores.push('lng debe ser un número válido');
+      errores.push('lng debe ser un numero valido');
     }
 
     if (data.lat < -90 || data.lat > 90) {
@@ -52,7 +52,7 @@ class Validator {
     }
 
     if (data.velocidad !== undefined && (typeof data.velocidad !== 'number' || data.velocidad < 0)) {
-      errores.push('velocidad debe ser un número positivo');
+      errores.push('velocidad debe ser un numero positivo');
     }
 
     if (data.rumbo !== undefined && (typeof data.rumbo !== 'number' || data.rumbo < 0 || data.rumbo > 360)) {
@@ -81,11 +81,11 @@ class Validator {
     }
 
     if (typeof data.lat !== 'number' || isNaN(data.lat)) {
-      errores.push('lat debe ser un número válido');
+      errores.push('lat debe ser un numero valido');
     }
 
     if (typeof data.lng !== 'number' || isNaN(data.lng)) {
-      errores.push('lng debe ser un número válido');
+      errores.push('lng debe ser un numero valido');
     }
 
     if (data.lat < -90 || data.lat > 90) {
@@ -117,7 +117,7 @@ class Validator {
     } catch (error) {
       return {
         valido: false,
-        errores: ['JSON inválido: ' + error.message]
+        errores: ['JSON invalido: ' + error.message]
       };
     }
   }

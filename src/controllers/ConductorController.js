@@ -44,7 +44,7 @@ class ConductorController {
     if (!validacion.valido) {
       return {
         success: false,
-        error: 'Ubicación inválida',
+        error: 'Ubicacion invalida',
         details: validacion.errores
       };
     }
@@ -70,7 +70,7 @@ class ConductorController {
 
       const resultado = this.broadcastService.enviarATodos(mensaje);
 
-      Logger.conductor('Ubicación actualizada', conductorId, {
+      Logger.conductor('Ubicacion actualizada', conductorId, {
         lat: ubicacion.lat,
         lng: ubicacion.lng,
         enviados: resultado.enviados
@@ -80,16 +80,16 @@ class ConductorController {
         success: true,
         data: {
           type: 'location_ack',
-          message: 'Ubicación recibida y distribuida',
+          message: 'Ubicacion recibida y distribuida',
           clientes_notificados: resultado.enviados,
           timestamp: Date.now()
         }
       };
     } catch (error) {
-      Logger.error('Error actualizando ubicación', error);
+      Logger.error('Error actualizando ubicacion', error);
       return {
         success: false,
-        error: 'Error en el servidor al actualizar ubicación'
+        error: 'Error en el servidor al actualizar ubicacion'
       };
     }
   }

@@ -3,7 +3,7 @@ const WebSocket = require('ws');
 const token = process.argv[2];
 
 if (!token) {
-  console.log('❌ Uso: node test-ws-connection.js <tu_token_jwt>');
+  console.log('Uso: node test-ws-connection.js <tu_token_jwt>');
   console.log('\nEjemplo:');
   console.log('node test-ws-connection.js eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...');
   process.exit(1);
@@ -11,17 +11,17 @@ if (!token) {
 
 const url = `ws://localhost:8080?token=${encodeURIComponent(token)}`;
 
-console.log('🔌 Conectando a:', url.substring(0, 50) + '...');
-console.log('🔑 Token:', token.substring(0, 30) + '...\n');
+console.log('Conectando a:', url.substring(0, 50) + '...');
+console.log('Token:', token.substring(0, 30) + '...\n');
 
 const ws = new WebSocket(url);
 
 ws.on('open', () => {
-  console.log('✅ CONEXIÓN EXITOSA\n');
+  console.log('CONEXION EXITOSA\n');
 });
 
 ws.on('message', (data) => {
-  console.log('📥 Mensaje recibido:');
+  console.log('Mensaje recibido:');
   try {
     const parsed = JSON.parse(data);
     console.log(JSON.stringify(parsed, null, 2));
@@ -31,17 +31,17 @@ ws.on('message', (data) => {
 });
 
 ws.on('error', (error) => {
-  console.log('❌ ERROR:', error.message);
+  console.log('ERROR:', error.message);
 });
 
 ws.on('close', (code, reason) => {
-  console.log(`\n🔌 Conexión cerrada - Código: ${code}, Razón: ${reason || 'Sin razón'}`);
+  console.log(`\nConexion cerrada - Codigo: ${code}, Razon: ${reason || 'Sin razon'}`);
   process.exit(code === 1000 ? 0 : 1);
 });
 
 setTimeout(() => {
   if (ws.readyState !== WebSocket.OPEN) {
-    console.log('\n⏰ Timeout - el servidor no respondió');
+    console.log('\nTimeout - el servidor no respondio');
     ws.close();
   }
 }, 5000);

@@ -35,7 +35,7 @@ class AuthMiddleware {
     if (!resultado.valido) {
       return {
         valido: false,
-        error: 'Token JWT inválido o expirado'
+        error: 'Token JWT invalido o expirado'
       };
     }
 

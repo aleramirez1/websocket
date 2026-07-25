@@ -21,6 +21,26 @@ class BroadcastService {
 
     return { enviados, fallidos };
   }
+
+  enviarAConductores(conductoresIds, mensaje) {
+    let enviados = 0;
+    let fallidos = 0;
+
+    for (const id of conductoresIds) {
+      const conductor = this.clienteService.obtenerConductor(id);
+      if (!conductor) continue;
+      try {
+        if (conductor.ws.readyState === 1) {
+          conductor.ws.send(JSON.stringify(mensaje));
+          enviados++;
+        }
+      } catch (error) {
+        fallidos++;
+      }
+    }
+
+    return { enviados, fallidos };
+  }
 }
 
 module.exports = BroadcastService;
