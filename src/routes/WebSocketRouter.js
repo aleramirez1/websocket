@@ -2,9 +2,10 @@ const Logger = require('../utils/logger');
 const ErrorHandler = require('../middleware/ErrorHandler');
 
 class WebSocketRouter {
-  constructor(conductorController, ciudadanoController) {
+  constructor(conductorController, ciudadanoController, anomaliaController) {
     this.conductorController = conductorController;
     this.ciudadanoController = ciudadanoController;
+    this.anomaliaController = anomaliaController;
   }
 
   manejarMensaje(ws, message, clienteMeta) {
@@ -31,6 +32,10 @@ class WebSocketRouter {
         
         case 'ping':
           this.ping(ws);
+          break;
+
+        case 'notificar_recalculo_ruta':
+          this.notificarRecalculoRuta(ws, data);
           break;
         
         default:
@@ -81,6 +86,23 @@ class WebSocketRouter {
       type: 'pong',
       timestamp: Date.now()
     }));
+  }
+
+  notificarRecalculoRuta(ws, data) {
+    const resultado = this.anomaliaController.notificarRecalculoRuta(data);
+
+    if (resultado.success) {
+      ws.send(JSON.stringify(resultado.data));
+    } else {
+      const errorResponse = ErrorHandler.crearRespuestaError(
+        resultado.error,
+        'RECALCULO_RUTA'
+      );
+      if (resultado.details) {
+        errorResponse.details = resultado.details;
+      }
+      ws.send(JSON.stringify(errorResponse));
+    }
   }
 
   manejarDesconexion(clienteMeta) {

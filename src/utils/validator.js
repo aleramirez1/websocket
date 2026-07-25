@@ -65,6 +65,51 @@ class Validator {
     };
   }
 
+  static validarAnomalia(data) {
+    const errores = [];
+
+    if (data.id_anomalia === undefined || data.id_anomalia === null) {
+      errores.push('id_anomalia es requerido');
+    }
+
+    if (data.lat === undefined || data.lat === null) {
+      errores.push('lat es requerido');
+    }
+
+    if (data.lng === undefined || data.lng === null) {
+      errores.push('lng es requerido');
+    }
+
+    if (typeof data.lat !== 'number' || isNaN(data.lat)) {
+      errores.push('lat debe ser un número válido');
+    }
+
+    if (typeof data.lng !== 'number' || isNaN(data.lng)) {
+      errores.push('lng debe ser un número válido');
+    }
+
+    if (data.lat < -90 || data.lat > 90) {
+      errores.push('lat debe estar entre -90 y 90');
+    }
+
+    if (data.lng < -180 || data.lng > 180) {
+      errores.push('lng debe estar entre -180 y 180');
+    }
+
+    if (!data.texto || typeof data.texto !== 'string') {
+      errores.push('texto es requerido y debe ser texto');
+    }
+
+    if (!data.status || typeof data.status !== 'string') {
+      errores.push('status es requerido y debe ser texto');
+    }
+
+    return {
+      valido: errores.length === 0,
+      errores
+    };
+  }
+
   static validarJSON(data) {
     try {
       JSON.parse(data);

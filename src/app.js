@@ -1,4 +1,5 @@
 const WebSocket = require('ws');
+const http = require('http');
 const url = require('url');
 const config = require('./config/config');
 const Logger = require('./utils/logger');
@@ -7,6 +8,7 @@ const UbicacionService = require('./services/UbicacionService');
 const BroadcastService = require('./services/BroadcastService');
 const ConductorController = require('./controllers/ConductorController');
 const CiudadanoController = require('./controllers/CiudadanoController');
+const AnomaliaController = require('./controllers/AnomaliaController');
 const WebSocketRouter = require('./routes/WebSocketRouter');
 const AuthMiddleware = require('./middleware/AuthMiddleware');
 
@@ -42,6 +44,10 @@ class App {
     this.ciudadanoController = new CiudadanoController(
       this.clienteService
     );
+
+    this.anomaliaController = new AnomaliaController(
+      this.broadcastService
+    );
     
     Logger.success('Controladores inicializados');
   }
@@ -49,7 +55,8 @@ class App {
   inicializarRouter() {
     this.router = new WebSocketRouter(
       this.conductorController,
-      this.ciudadanoController
+      this.ciudadanoController,
+      this.anomaliaController
     );
     
     Logger.success('Router inicializado');
@@ -57,14 +64,18 @@ class App {
 
   iniciar() {
     try {
+      this.httpServer = http.createServer((req, res) => this.manejarHttp(req, res));
+
       this.wss = new WebSocket.Server({ 
-        port: this.config.port,
+        server: this.httpServer,
         clientTracking: true,
         perMessageDeflate: false,
         verifyClient: (info, callback) => {
           this.verificarCliente(info, callback);
         }
       });
+
+      this.httpServer.listen(this.config.port);
 
       Logger.success(`Servidor WebSocket iniciado en puerto ${this.config.port}`);
       Logger.info(`Entorno: ${this.config.env}`);
@@ -84,36 +95,115 @@ class App {
     }
   }
 
+  manejarHttp(req, res) {
+    const parsedUrl = url.parse(req.url, true);
+
+    if (req.method === 'POST' && parsedUrl.pathname === '/notificar_recalculo_ruta') {
+      let body = '';
+
+      req.on('data', (chunk) => {
+        body += chunk;
+      });
+
+      req.on('end', () => {
+        let data;
+
+        try {
+          data = JSON.parse(body);
+        } catch (error) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: 'JSON invalido' }));
+          return;
+        }
+
+        const resultado = this.anomaliaController.notificarRecalculoRuta(data);
+
+        if (!resultado.success) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(resultado));
+          return;
+        }
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(resultado.data));
+      });
+
+      return;
+    }
+
+    if (req.method === 'POST' && parsedUrl.pathname === '/notificar_ruta_anomalia') {
+      let body = '';
+
+      req.on('data', (chunk) => {
+        body += chunk;
+      });
+
+      req.on('end', () => {
+        let data;
+
+        try {
+          data = JSON.parse(body);
+        } catch (error) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: 'JSON invalido' }));
+          return;
+        }
+
+        const resultado = this.anomaliaController.notificarRutaAnomalia(data);
+
+        if (!resultado.success) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(resultado));
+          return;
+        }
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(resultado.data));
+      });
+
+      return;
+    }
+
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: false, error: 'No encontrado' }));
+  }
+
   verificarCliente(info, callback) {
     const params = url.parse(info.req.url, true).query;
     const token = params.token || info.req.headers['sec-websocket-protocol'];
+    const role = params.role;
 
     Logger.info(`Verificando cliente - URL: ${info.req.url}`);
     Logger.info(`Token encontrado: ${token ? 'Si (' + token.substring(0, 20) + '...)' : 'No'}`);
+    Logger.info(`Role recibido: ${role || 'no especificado'}`);
 
     if (!token) {
-      Logger.warning('Conexión rechazada: sin token JWT');
+      Logger.warning('Conexion rechazada: sin token JWT');
       callback(false, 401, 'Token JWT requerido');
+      return;
+    }
+
+    if (!role || !['conductor', 'ciudadano'].includes(role)) {
+      Logger.warning(`Conexion rechazada: role invalido o ausente (${role})`);
+      callback(false, 400, 'Query param "role" requerido: conductor o ciudadano');
       return;
     }
 
     const auth = this.authMiddleware.verificarToken(token);
     
     if (!auth.valido) {
-      Logger.warning(`Conexión rechazada: ${auth.error}`);
-      Logger.warning(`Token recibido: ${token.substring(0, 50)}...`);
-      Logger.warning(`Secret usado: ${this.config.jwtSecret.substring(0, 10)}...`);
+      Logger.warning(`Conexion rechazada: ${auth.error}`);
       callback(false, 401, auth.error);
       return;
     }
 
     info.req.user = {
       userId: auth.datos.user_id,
-      roleId: auth.datos.role_id,
+      role: role,
       datos: auth.datos
     };
 
-    Logger.success(`Token valido para user_id: ${auth.datos.user_id}, role_id: ${auth.datos.role_id}`);
+    Logger.success(`Token valido para user_id: ${auth.datos.user_id}, role: ${role}`);
     callback(true);
   }
 
@@ -125,14 +215,14 @@ class App {
       autenticado: true,
       tipo: null,
       userId: user.userId,
-      roleId: user.roleId,
+      role: user.role,
       datos: user.datos,
       ciudadano: null
     };
 
-    Logger.conexion(`Nueva conexión autenticada desde ${ip} (user_id: ${user.userId}, role_id: ${user.roleId})`);
+    Logger.conexion(`Nueva conexion autenticada desde ${ip} (user_id: ${user.userId}, role: ${user.role})`);
 
-    if (this.authMiddleware.esConductor(user.roleId)) {
+    if (user.role === 'conductor') {
       const resultado = this.conductorController.conectar(ws, user.userId, user.datos);
       
       if (resultado.success) {
@@ -147,7 +237,7 @@ class App {
         ws.close();
         return;
       }
-    } else if (this.authMiddleware.esCiudadano(user.roleId)) {
+    } else if (user.role === 'ciudadano') {
       const resultado = this.ciudadanoController.conectar(ws, user.userId, user.datos);
       
       if (resultado.success) {
@@ -163,14 +253,6 @@ class App {
         ws.close();
         return;
       }
-    } else {
-      ws.send(JSON.stringify({
-        type: 'error',
-        code: 'INVALID_ROLE',
-        message: `Rol inválido: ${user.roleId}. Debe ser 3 o 5 (ciudadano) o 4 (conductor)`
-      }));
-      ws.close();
-      return;
     }
 
     ws.isAlive = true;
@@ -189,11 +271,11 @@ class App {
 
     ws.on('close', () => {
       this.router.manejarDesconexion(clienteMeta);
-      Logger.conexion('Conexión cerrada');
+      Logger.conexion('Conexion cerrada');
     });
 
     ws.on('error', (error) => {
-      Logger.error('Error en conexión WebSocket', error);
+      Logger.error('Error en conexion WebSocket', error);
     });
   }
 
@@ -218,7 +300,7 @@ class App {
   limpiarConexionesInactivas() {
     this.wss.clients.forEach((ws) => {
       if (ws.isAlive === false) {
-        Logger.warning('Terminando conexión inactiva');
+        Logger.warning('Terminando conexion inactiva');
         return ws.terminate();
       }
       
@@ -242,8 +324,10 @@ class App {
       });
       
       this.wss.close(() => {
-        Logger.success('Servidor cerrado correctamente');
-        process.exit(0);
+        this.httpServer.close(() => {
+          Logger.success('Servidor cerrado correctamente');
+          process.exit(0);
+        });
       });
 
       setTimeout(() => {
