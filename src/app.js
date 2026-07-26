@@ -1,5 +1,7 @@
+const fs = require('fs');
 const WebSocket = require('ws');
 const http = require('http');
+const https = require('https');
 const url = require('url');
 const config = require('./config/config');
 const Logger = require('./utils/logger');
@@ -64,7 +66,20 @@ class App {
 
   iniciar() {
     try {
-      this.httpServer = http.createServer((req, res) => this.manejarHttp(req, res));
+      const sslCert = process.env.SSL_CERT;
+      const sslKey = process.env.SSL_KEY;
+
+      if (sslCert && sslKey) {
+        const options = {
+          cert: fs.readFileSync(sslCert),
+          key: fs.readFileSync(sslKey),
+        };
+        this.httpServer = https.createServer(options, (req, res) => this.manejarHttp(req, res));
+        Logger.info('Servidor configurado con HTTPS (SSL)');
+      } else {
+        this.httpServer = http.createServer((req, res) => this.manejarHttp(req, res));
+        Logger.info('Servidor configurado con HTTP (sin SSL)');
+      }
 
       this.wss = new WebSocket.Server({ 
         server: this.httpServer,
