@@ -51,17 +51,39 @@ class Validator {
       errores.push('lng debe estar entre -180 y 180');
     }
 
-    if (data.velocidad !== undefined && (typeof data.velocidad !== 'number' || data.velocidad < 0)) {
-      errores.push('velocidad debe ser un numero positivo');
-    }
-
-    if (data.rumbo !== undefined && (typeof data.rumbo !== 'number' || data.rumbo < 0 || data.rumbo > 360)) {
-      errores.push('rumbo debe estar entre 0 y 360');
-    }
+    // velocidad y rumbo son datos "suaves": si vienen invalidos no deben tirar
+    // toda la actualizacion de posicion (lat/lng ya se validaron arriba). Se
+    // descartan solo esos campos puntuales en sanitizarUbicacion().
 
     return {
       valido: errores.length === 0,
       errores
+    };
+  }
+
+  /**
+   * Limpia campos opcionales de una ubicacion ya validada por validarUbicacion().
+   * Si `velocidad` o `rumbo` vienen fuera de rango o con tipo invalido, se
+   * devuelven como `null` en vez de invalidar todo el mensaje: el conductor
+   * puede no tener un rumbo confiable (detenido, GPS con mala señal) y aun asi
+   * su posicion (lat/lng) debe seguir llegando a los ciudadanos.
+   */
+  static sanitizarUbicacion(data) {
+    const velocidadValida =
+      typeof data.velocidad === 'number' &&
+      !isNaN(data.velocidad) &&
+      data.velocidad >= 0;
+
+    const rumboValido =
+      typeof data.rumbo === 'number' &&
+      !isNaN(data.rumbo) &&
+      data.rumbo >= 0 &&
+      data.rumbo <= 360;
+
+    return {
+      ...data,
+      velocidad: velocidadValida ? data.velocidad : null,
+      rumbo: rumboValido ? data.rumbo : null
     };
   }
 

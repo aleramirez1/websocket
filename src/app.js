@@ -44,7 +44,8 @@ class App {
     );
     
     this.ciudadanoController = new CiudadanoController(
-      this.clienteService
+      this.clienteService,
+      this.ubicacionService
     );
 
     this.anomaliaController = new AnomaliaController(
