@@ -40,7 +40,7 @@ class ConductorController {
 
   actualizarUbicacion(conductorId, data) {
     const validacion = Validator.validarUbicacion(data);
-    
+
     if (!validacion.valido) {
       return {
         success: false,
@@ -49,9 +49,13 @@ class ConductorController {
       };
     }
 
+    // velocidad/rumbo invalidos no deben descartar la posicion: se limpian
+    // aqui (quedan en null) en vez de rechazar el mensaje completo.
+    const datosLimpios = Validator.sanitizarUbicacion(data);
+
     try {
       const conductor = this.clienteService.obtenerConductor(conductorId);
-      
+
       if (!conductor) {
         return {
           success: false,
@@ -59,7 +63,7 @@ class ConductorController {
         };
       }
 
-      const ubicacion = this.ubicacionService.guardarUbicacion(conductorId, data);
+      const ubicacion = this.ubicacionService.guardarUbicacion(conductorId, datosLimpios);
       const ubicacionJSON = ubicacion.toJSON();
       
       const mensaje = {
