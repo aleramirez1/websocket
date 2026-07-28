@@ -13,9 +13,9 @@ class AnomaliaController {
       errores.push('conductores_ids es requerido y debe ser un arreglo');
     }
 
-    if (!data.camiones_ids || !Array.isArray(data.camiones_ids) || data.camiones_ids.length === 0) {
+    /* if (!data.camiones_ids || !Array.isArray(data.camiones_ids) || data.camiones_ids.length === 0) {
       errores.push('camiones_ids es requerido y debe ser un arreglo');
-    }
+    } */
 
     if (!data.id_anomalia) {
       errores.push('id_anomalia es requerido');
